@@ -15,6 +15,11 @@ const auth = async (req , res , next) => {
         req.userId = decoded.id();
         next();
     }catch(error){
-        return res.status(401).json({success: false, message: "Not authorized , invalid token"})
+        console.error("Auth middleware error:", error.message);
+        return res.status(401).json({success: false, message: "Not authorized , token failed"});
     }
 }
+
+
+
+export default auth;
