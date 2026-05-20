@@ -1,97 +1,97 @@
-import type { AxiosInstance } from 'axios';
 import axios from 'axios';
-import { register } from 'node:module';
-import {createContext, use, useContext, useState, type ReactNode} from 'react';
-
-
-
-interface User{
-    id: string;
-    name: string;
-    email: string;
-    plan: string;
-    analysisCount?: number;
-}
-
-interface AppContextType {
-    user: User | null ;
-    token: string | null;
-    loading: boolean;
-    api: AxiosInstance ;
-    login: (email: string, passwaord: string)=> Promise<{success: boolean;
-        message?: string}>;
-    register: (name: string, email: string, passwaord: string)=> Promise<{success: boolean;
-        message?: string}>;
-    logout: ()=> void;
-
-
-    
-    }
-
+import {useCallback, useEffect, useState, type ReactNode} from 'react';
+import { AppContext, type AppContextType, type User } from './AppContextType';
 
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:5000";
 
-
-
-const AppContext = createContext<AppContextType | undefined>(undefined);
-
-
 export function AppProvider({children}: {children: ReactNode}){
-
     const [user, setUser] = useState<User | null>(null);
     const [token, setToken] = useState<string | null>(localStorage.getItem("token"));
     const [loading, setLoading] = useState(true);
 
-
     // Axios instance with auth header
-    const api= axios.create({
-        baseURL: BACKEND_URL;
-
+    const api = axios.create({
+        baseURL: BACKEND_URL,
+        withCredentials: true,
+        headers: {
+            "Content-Type": "application/json"
+        }
     })
 
     // Update axios headers when token changes
-
     api.interceptors.request.use((config)=>{
         const token = localStorage.getItem("token")
-
         if(token){
             config.headers.Authorization = `Bearer ${token}`
         }
-
         return config;
-
     })
 
-    const loadUser = async ()=>{
+    const loadUser = useCallback(async ()=>{
+        if(!token){
+            setLoading(false);
+            return;
+        }
+        try{
+            const {data} = await api.get('/api/auth/user')
+            if(data.success){
+                setUser(data.user)
+            }
+        }catch(error){
+            // Handle error silently - just clear auth state
+            console.error('Failed to load user:', error);
+            localStorage.removeItem("token");
+            setToken(null);
+            setUser(null);
+        }
+        setLoading(false);
+    }, [token, api])
 
+    useEffect(() => {
+        loadUser();
+    }, [loadUser])
+
+    const login = async (email: string, password: string) => {
+        try{
+            const res = await api.post('/api/auth/login', {email, password})
+            if(res.data.success){
+                setToken(res.data.token)
+                setUser(res.data.user)
+                localStorage.setItem("token", res.data.token)
+                return {success: true}
+            }
+            return {success: false, message: res.data.message}
+        }catch(error: Error | unknown){
+            const message = error instanceof Error ? error.message : "Login failed"
+            return {success: false, message}
+        }
     }
 
-
-    const login = async () => {
-
+    const register = async (name: string, email: string, password: string) => {
+        try{
+            const res = await api.post('/api/auth/register', {name, email, password})
+            if(res.data.success){
+                setToken(res.data.token)
+                setUser(res.data.user)
+                localStorage.setItem("token", res.data.token)
+                return {success: true}
+            }
+            return {success: false, message: res.data.message}
+        }catch(error: Error | unknown){
+            const message = error instanceof Error ? error.message : "Registration failed"
+            return {success: false, message}
+        }
     }
 
-    const register = async () => {}
-
-
-    const logout = async () =>{
-
+    const logout = () =>{
+        setToken(null);
+        setUser(null);
+        localStorage.removeItem("token");
     }
 
-
-    const value = {user, token, loading, api, login, register, logout}
-
-
+    const value: AppContextType = {user, token, loading, api, login, register, logout}
 
     return <AppContext.Provider value={value}>
         {children}
     </AppContext.Provider>
-}
-
-
-
-export  function useApp(){
-    const context = useContext(AppContext)
-    if(!context) throw new Error("useApp must be used within AppProvider");
-    return context;
 }

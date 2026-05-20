@@ -2,7 +2,6 @@
 import User from "../models/User.js";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
-import { use } from "react";
 
 // Generate JWT token
 const  generateToken = (id) => {
@@ -25,7 +24,7 @@ export const register = async (req, res )=>{
         if(existingUser) return res.status(400).json({success: false, message: "User already exists"});
 
         // Hash password
-        const hashPassword = await bcrypt.hash(password, await bcrypt.genSalt(10));
+        const hashedPassword = await bcrypt.hash(password, await bcrypt.genSalt(10));
 
         // Create user
         const user = await User.create({name, email, password: hashedPassword})
@@ -79,7 +78,7 @@ export const login = async (req, res )=>{
 
 // get current user
 
-export const getUSer = async (req, res )=>{
+export const getUser = async (req, res )=>{
     try {
         const user = await User.findById(req.userId).select("-password")
         if(!user){
