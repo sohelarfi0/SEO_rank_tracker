@@ -67,6 +67,8 @@ export default function Login({ state }: { state: string }) {
                                     <input
                                         type="text"
                                         required
+                                        name="name"
+                                        id="login-name"
                                         value={name}
                                         onChange={(e) => setName(e.target.value)}
                                         placeholder="Enter your name"
@@ -82,6 +84,8 @@ export default function Login({ state }: { state: string }) {
                                 <input
                                     type="email"
                                     required
+                                    name="email"
+                                    id="login-email"
                                     value={email}
                                     onChange={(e) => setEmail(e.target.value)}
                                     placeholder="you@example.com"
@@ -97,6 +101,8 @@ export default function Login({ state }: { state: string }) {
                                 <input
                                     type="password"
                                     required
+                                    name="password"
+                                    id="login-password"
                                     value={password}
                                     onChange={(e) => setPassword(e.target.value)}
                                     placeholder="Enter your password"
