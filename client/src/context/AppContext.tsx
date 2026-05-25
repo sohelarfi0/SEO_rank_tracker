@@ -1,7 +1,30 @@
 import axios from 'axios';
-import {useCallback, useEffect, useState, type ReactNode} from 'react';
-import { AppContext, type AppContextType, type User } from './AppContextType';
+import {useCallback, useContext, useEffect, useState, type ReactNode} from 'react';
+import { createContext } from 'react';
+import type { AxiosInstance } from 'axios';
 
+// Types
+export interface User {
+    id: string;
+    name: string;
+    email: string;
+    plan: string;
+    analysisCount?: number;
+}
+
+export interface AppContextType {
+    user: User | null;
+    token: string | null;
+    loading: boolean;
+    api: AxiosInstance;
+    login: (email: string, password: string) => Promise<{ success: boolean; message?: string }>;
+    register: (name: string, email: string, password: string) => Promise<{ success: boolean; message?: string }>;
+    logout: () => void;
+}
+
+export const AppContext = createContext<AppContextType | undefined>(undefined);
+
+// Provider Component
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:5000";
 
 export function AppProvider({children}: {children: ReactNode}){
@@ -95,3 +118,12 @@ export function AppProvider({children}: {children: ReactNode}){
         {children}
     </AppContext.Provider>
 }
+
+export function useApp(){
+    const context = useContext(AppContext)
+    if(!context) throw new Error("useApp must be used within AppProvider");
+    return context;
+}
+
+
+
