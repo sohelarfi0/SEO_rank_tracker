@@ -1,5 +1,7 @@
-import Analysis from "../models/Analysis";
-import { scrapeUrl } from "../services/scraperService";
+import { Scale } from "@google/genai";
+import Analysis from "../models/Analysis.js";
+import { analyzeSeoData } from "../services/geminiService.js";
+import { scrapeUrl } from "../services/scraperService.js";
 
 
 // Analyze a URL
@@ -42,6 +44,32 @@ export const analyzeUrl = async (req , res)=> {
             return;
         }
         // step 2: Analysis with Gemini AI
+        const aiResult = await analyzeSeoData(scrapeResult.data)
+
+        if(!aiResult.success){
+            analysis.status = "failed";
+            await analysis.save()
+            return;
+        }
+
+
+        // step 3: Save results
+        analysis.overallScore = aiResult.data.overallScore || 0;
+        analysis.categories = aiResult.data.categories || {};
+        analysis.metaData = scrapeResult.data.metaData || {};
+        analysis.headings = scrapeResult.data.headings || {};
+        analysis.links = scrapeResult.data.links || {};
+        analysis.images = scrapeResult.data.images || {};
+        analysis.keywords = aiResult.data.keywords || {};
+        analysis.issues = aiResult.data.issues || {};
+        analysis.loadTime = scrapeResult.loadTime || {};
+        analysis.pageSize = scrapeResult.data.pageSize || {};
+        analysis.wordCount = scrapeResult.wordCount || {};
+        analysis.status = "completed";
+
+        await analysis.save();
+
+
 
         
     } catch (bgError) {
@@ -71,16 +99,52 @@ export const analyzeUrl = async (req , res)=> {
 
 //  Get analysis by ID
 export  const getAnalysis = async (res, req)=> {
+    try {
+        const analysis = await Analysis.findOne({_id: req.params.id, userId: req.userId})
+
+        if(!analysis) return res.status(404).json({success: false, message: "Analysis not found"});
+
+        res.json({success: true, analysis});
+
+        
+    } catch (error) {
+        console.error("Get analysis error:", error.message);
+        res.status(500).json({success: false, message: "Server error"});
+    }
 
 }
 
 // Get all analyses for user
 
 export const getAnalyses = async (req, res) => {
+ try {
+        const page = parseInt(req.query.page) || 1;
+        const limit = parseInt(req.query.limit) || 10;
+        const skip = (page - 1)* limit;
 
+
+        const analysis = await (await Analysis.find({userId: req.userId})).sort({createdAt: -1}).skip(skip).limit(limit).select("-issues -keywoords");
+        const total = await Analysis.countDocuments({userId: req.userId})
+
+        res.json({success: true, analysis, pagination: {page, limit, total, pages: Math.ceil(total/limit)} });
+
+        
+    } catch (error) {
+        console.error("Get analysis error:", error.message);
+        res.status(500).json({success: false, message: "Server error"});
+    }
 }
 
 //  Delete analysis
 export const deleteAnalysis = async (req, res) => {
+  try {
+        await Analysis.findByIdAndDelete({_id: req.params.id, userId: req.userId})
 
+        res.json({success: true, message: "Analysis deleted"});
+
+        
+    } catch (error) {
+        console.error("Delete analysis error:", error.message);
+        res.status(500).json({success: false, message: "Server error"});
+    }
 }
