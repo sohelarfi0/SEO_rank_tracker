@@ -4,6 +4,7 @@ import "dotenv/config";
 import connectDB from "./config/db.js";
 import authRouter from "./routes/authRoutes.js";
 import rankRouter from "./routes/rankRoutes.js";
+import analysisRouter from "./routes/analysisRoutes.js";
 
 connectDB().catch(err => console.error("DB Connection Error:", err));
 
@@ -25,6 +26,7 @@ app.use(express.json());
 app.get('/', (req, res)=> res.send("Server is running"))
 app.use('/api/auth', authRouter);
 app.use('/api/rank', rankRouter);
+app.use('/api/analysis', analysisRouter);
 
 
 const PORT = process.env.PORT || 5000;
