@@ -1,5 +1,5 @@
 import {chromium} from 'playwright-core';
-import Browserbase from 'browserbasehq/sdk';
+import Browserbase from '@browserbasehq/sdk';
 
 
 const bb = new Browserbase({
@@ -92,21 +92,22 @@ export async function rankTracker(keyword, targetDomain){
                 }
             }
         
+            if(!pageResults.length) break;
+
+            // 5. Result Synthesis: Update global results and check for target match
+            for(const r of pageResults){
+                r.position = allResults.length + 1;
+                allResults.push(r)
+                if(!found && (r.domain.toLowerCase().includes(cleanTarget) || cleanTarget.includes(r.domain.toLowerCase()))){
+                    found = {...r, page:gPage + 1}
+                }
+            }
         }
 
-        if(!pageResults.length) break;
-
-        // 5. Result Synthesis: Update global results and check for target match
-        for(const r of pageResults){
-            r.position = allResults.length + 1;
-            allResults.push(r)
-            if(!found && (r.domain.toLowerCase().includes(cleanTarget) || cleanTarget.includes(r.domain.toLowerCase()))){
-                found = {...r, page:gPage + 1}
-            }
-            // 6. finalization: close browser and extract competitiors
-            await browser.close();
-            const competitors = allResults.filter((r)=>!r.domain.toLowerCase().includes(cleanTarget) &&
-        !cleanTarget.includes(r.domain.toLowerCase())).slice(0,10);
+        // 6. finalization: close browser and extract competitors
+        await browser.close();
+        const competitors = allResults.filter((r)=>!r.domain.toLowerCase().includes(cleanTarget) &&
+    !cleanTarget.includes(r.domain.toLowerCase())).slice(0,10);
 
         return {
             success: true,
@@ -121,8 +122,6 @@ export async function rankTracker(keyword, targetDomain){
                 totalResultsScaned: allResults.length
             }
         }
-        }
-            
     }catch(error){
         console.error("Rank check error:", error.message);
         if(browser) await browser.close().catch(()=>{})

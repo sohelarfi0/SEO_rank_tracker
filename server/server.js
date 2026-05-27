@@ -5,12 +5,13 @@ import connectDB from "./config/db.js";
 import authRouter from "./routes/authRoutes.js";
 import rankRouter from "./routes/rankRoutes.js";
 import analysisRouter from "./routes/analysisRoutes.js";
+import { startRankTrackingCron } from "./cron/rankTrackingCron.js";
 
-connectDB().catch(err => console.error("DB Connection Error:", err));
+connectDB()
 
 const app = express();
 
-// CORS middleware - must be before routes
+
 app.use(cors({
   origin: "http://localhost:5173",
   credentials: true,
@@ -21,14 +22,12 @@ app.use(cors({
 // Body parser
 app.use(express.json());
 
-
-
-app.get('/', (req, res)=> res.send("Server is running"))
+app.get('/', (req, res) => res.send("Server is running"))
 app.use('/api/auth', authRouter);
 app.use('/api/rank', rankRouter);
 app.use('/api/analysis', analysisRouter);
 
+startRankTrackingCron()
 
 const PORT = process.env.PORT || 5000;
-
-app.listen(PORT, ()=> console.log(`Server is running on port ${PORT} `))
+app.listen(PORT, () => console.log(`Server is running on port ${PORT}`))
